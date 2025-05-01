@@ -11,6 +11,8 @@ The **Spanner Cassandra Java Client** is a tool designed to bridge applications 
 
 This client acts as a local tcp proxy, intercepting the raw Cassandra protocol bytes sent by a driver or client tool. It then wraps these bytes along with necessary metadata into gRPC messages for communication with Spanner. Responses from Spanner are translated back into the Cassandra wire format and sent back to the originating driver or tool.
 
+![in-process](in-process.png)
+
 ## Table of Contents
 
 - [When to use java-spanner-cassandra?](#when-to-use-spanner-cassandra-java-client)
@@ -117,6 +119,8 @@ For Java applications already using the `cassandra-java-driver` library, integra
 *  Run your Java application as usual. The adapter will now route traffic to your Spanner database.
 
 ### Sidecar Proxy
+
+![sidecar](sidecar.png)
 
 For non-Java applications or tools like `cqlsh`, you can run the Spanner Cassandra Java Client as a standalone proxy.
 
