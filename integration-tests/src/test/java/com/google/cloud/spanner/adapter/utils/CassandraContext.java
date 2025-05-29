@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,14 +35,12 @@ import org.testcontainers.utility.DockerImageName;
 public class CassandraContext extends DatabaseContext {
   private static final DockerImageName CASSANDRA_IMAGE = DockerImageName.parse("cassandra:latest");
   private static final int PORT = 9042;
-  private final String keyspace;
 
   private CassandraContainer cassandraContainer;
   private CqlSession session;
 
   public CassandraContext() {
     super("Cassandra");
-    keyspace = "java_it_test_" + LocalDateTime.now().format(formatter);
   }
 
   @Override
@@ -68,9 +65,9 @@ public class CassandraContext extends DatabaseContext {
           String.format(
               "CREATE KEYSPACE IF NOT EXISTS %s WITH REPLICATION = { 'class' : 'SimpleStrategy',"
                   + " 'replication_factor' : 1 };",
-              keyspace);
+              keyspace());
       session.execute(createKeyspaceCql);
-      session.execute("USE " + keyspace);
+      session.execute("USE " + keyspace());
     } catch (Exception e) {
       if (cassandraContainer != null && cassandraContainer.isRunning()) {
         cassandraContainer.stop();

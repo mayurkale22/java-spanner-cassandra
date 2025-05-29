@@ -17,6 +17,7 @@ limitations under the License.
 package com.google.cloud.spanner.adapter.utils;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -28,14 +29,20 @@ public abstract class DatabaseContext {
   protected static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
   private final String name;
+  private final String keyspace;
 
   public DatabaseContext(String name) {
     this.name = name;
+    keyspace = "java_it_test_" + LocalDateTime.now().format(formatter);
   }
 
   @Override
   public String toString() {
     return name;
+  }
+
+  public String keyspace() {
+    return keyspace;
   }
 
   /** Initializes the database */
