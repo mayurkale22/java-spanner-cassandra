@@ -87,4 +87,29 @@ public class RandomSessionQueryGeneratorIT extends AbstractIT {
     // Assert that the retrieved data matches the generated data
     assertEquals(expectedData, actualData);
   }
+
+  @Test
+  public void testMultipleRandomInserts() {
+    int numInserts = 10; // Test inserting multiple random entries
+    for (int i = 0; i < numInserts; i++) {
+      RandomSessionQueryGenerator.SessionDataAndStatement insertDataAndStmt =
+          queryGenerator.generateRandomInsert();
+      session.execute(insertDataAndStmt.statement);
+
+      // Immediately verify the inserted data
+      BoundStatement selectStmt =
+          queryGenerator.generateSelectBySessionId(insertDataAndStmt.sessionData.sessionId);
+      Row row = session.execute(selectStmt).one();
+      assertNotNull(row);
+      RandomSessionQueryGenerator.SessionData actualData =
+          RandomSessionQueryGenerator.SessionData.fromRow(row);
+      assertEquals(insertDataAndStmt.sessionData, actualData);
+    }
+
+    // Verify total count (requires ALLOW FILTERING or a specific query pattern)
+    // For simple count, this often needs ALLOW FILTERING if not using a specific partition key
+    // Not ideal for large-scale production, but okay for integration test verification.
+    ResultSet countRs = session.execute("SELECT COUNT(*) FROM " + TABLE_NAME + " ALLOW FILTERING");
+    assertEquals(numInserts, countRs.one().getLong(0));
+  }
 }
