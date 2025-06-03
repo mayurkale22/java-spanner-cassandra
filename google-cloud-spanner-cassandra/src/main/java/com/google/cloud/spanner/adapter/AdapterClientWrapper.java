@@ -36,6 +36,7 @@ final class AdapterClientWrapper {
   private final AdapterClient adapterClient;
   private final AttachmentsCache attachmentsCache;
   private final SessionManager sessionManager;
+  private final MetricsRecorder metricsRecorder;
 
   /**
    * Constructs a wrapper around the AdapterClient responsible for procession gRPC communication.
@@ -43,14 +44,17 @@ final class AdapterClientWrapper {
    * @param adapterClient Stub used to communicate with the Adapter service.
    * @param attachmentsCache The global cache for the attachments.
    * @param sessionManager The manager providing session for requests.
+   * @param metricsRecorder recorder used for recording metrics.
    */
   AdapterClientWrapper(
       AdapterClient adapterClient,
       AttachmentsCache attachmentsCache,
-      SessionManager sessionManager) {
+      SessionManager sessionManager,
+      MetricsRecorder metricsRecorder) {
     this.adapterClient = adapterClient;
     this.attachmentsCache = attachmentsCache;
     this.sessionManager = sessionManager;
+    this.metricsRecorder = metricsRecorder;
   }
 
   /**
@@ -106,5 +110,9 @@ final class AdapterClientWrapper {
 
   AttachmentsCache getAttachmentsCache() {
     return attachmentsCache;
+  }
+
+  MetricsRecorder getMetricsRecorder() {
+    return metricsRecorder;
   }
 }

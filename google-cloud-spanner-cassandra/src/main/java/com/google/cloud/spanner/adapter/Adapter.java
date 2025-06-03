@@ -22,6 +22,7 @@ import com.google.api.gax.rpc.HeaderProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.spanner.adapter.v1.AdapterClient;
 import com.google.spanner.adapter.v1.AdapterSettings;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -49,10 +50,13 @@ final class Adapter {
   private final int port;
   private final String databaseUri;
   private final int numGrpcChannels;
+  private final boolean enableBuiltInMetrics;
   private AdapterClientWrapper adapterClientWrapper;
   private ServerSocket serverSocket;
   private ExecutorService executor;
   private boolean started = false;
+
+  private final BuiltInMetricsProvider builtInMetricsProvider = BuiltInMetricsProvider.INSTANCE;
 
   /**
    * Constructor for the Adapter class, specifying a specific address to bind to.
@@ -62,12 +66,19 @@ final class Adapter {
    * @param port The local TCP port number that the adapter server should listen on.
    * @param numGrpcChannels The number of gRPC channels to use for communication with the backend
    *     Spanner service.
+   * @param enableBuiltInMetrics whether or not enable built-in metrics.
    */
-  Adapter(String databaseUri, InetAddress inetAddress, int port, int numGrpcChannels) {
+  Adapter(
+      String databaseUri,
+      InetAddress inetAddress,
+      int port,
+      int numGrpcChannels,
+      boolean enableBuiltInMetrics) {
     this.databaseUri = databaseUri;
     this.inetAddress = inetAddress;
     this.port = port;
     this.numGrpcChannels = numGrpcChannels;
+    this.enableBuiltInMetrics = enableBuiltInMetrics;
   }
 
   /** Starts the adapter, initializing the local TCP server and handling client connections. */
@@ -94,6 +105,13 @@ final class Adapter {
       HeaderProvider headerProvider =
           FixedHeaderProvider.create(RESOURCE_PREFIX_HEADER_KEY, databaseUri);
 
+      OpenTelemetry openTelemetry = OpenTelemetry.noop();
+      if (enableBuiltInMetrics) {
+        openTelemetry = builtInMetricsProvider.getOrCreateOpenTelemetry(databaseUri, credentials);
+      }
+      MetricsRecorder metricsRecorder =
+          new MetricsRecorder(openTelemetry, BuiltInMetricsConstant.METER_NAME);
+
       final String env_var_endpoint = System.getenv(ENV_VAR_SPANNER_ENDPOINT);
 
       AdapterSettings settings =
@@ -112,7 +130,8 @@ final class Adapter {
       sessionManager.getSession();
 
       adapterClientWrapper =
-          new AdapterClientWrapper(adapterClient, attachmentsCache, sessionManager);
+          new AdapterClientWrapper(
+              adapterClient, attachmentsCache, sessionManager, metricsRecorder);
 
       // Start listening on the specified host and port.
       serverSocket = new ServerSocket(port, DEFAULT_CONNECTION_BACKLOG, inetAddress);

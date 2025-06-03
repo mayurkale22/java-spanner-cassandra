@@ -56,6 +56,7 @@ public class SpannerCassandraLauncher {
   private static final String HOST_PROP_KEY = "host";
   private static final String PORT_PROP_KEY = "port";
   private static final String NUM_GRPC_CHANNELS_PROP_KEY = "numGrpcChannels";
+  private static final String BUILTIN_METRICS_PROP_KEY = "builtInMetrics";
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final String DEFAULT_PORT = "9042";
   private static final String DEFAULT_NUM_GRPC_CHANNELS = "4";
@@ -67,13 +68,15 @@ public class SpannerCassandraLauncher {
     final int port = Integer.parseInt(System.getProperty(PORT_PROP_KEY, DEFAULT_PORT));
     final int numGrpcChannels =
         Integer.parseInt(System.getProperty(NUM_GRPC_CHANNELS_PROP_KEY, DEFAULT_NUM_GRPC_CHANNELS));
+    final boolean enableBuiltInMetrics =
+        Boolean.parseBoolean(System.getProperty(BUILTIN_METRICS_PROP_KEY));
 
     if (databaseUri == null) {
       throw new IllegalArgumentException(
           "Spanner database URI not set. Please set it using -DdatabaseUri option.");
     }
 
-    Adapter adapter = new Adapter(databaseUri, inetAddress, port, numGrpcChannels);
+    Adapter adapter = new Adapter(databaseUri, inetAddress, port, numGrpcChannels, true);
 
     Runtime.getRuntime()
         .addShutdownHook(

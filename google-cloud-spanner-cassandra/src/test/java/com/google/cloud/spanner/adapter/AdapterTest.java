@@ -55,7 +55,7 @@ public final class AdapterTest {
 
   @Before
   public void setUp() {
-    adapter = new Adapter(TEST_DATABASE_URI, inetAddress, TEST_PORT, 4);
+    adapter = new Adapter(TEST_DATABASE_URI, inetAddress, TEST_PORT, 4, false);
   }
 
   @Test

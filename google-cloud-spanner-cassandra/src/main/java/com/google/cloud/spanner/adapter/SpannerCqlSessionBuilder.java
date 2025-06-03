@@ -47,6 +47,7 @@ public final class SpannerCqlSessionBuilder
   private Adapter adapter;
   private int numGrpcChannels = DEFAULT_NUM_GRPC_CHANNELS;
   private String databaseUri = null;
+  private boolean enableBuiltInMetrics = false;
 
   /**
    * Wraps the default CQL session with a SpannerCqlSession instance.
@@ -72,6 +73,14 @@ public final class SpannerCqlSessionBuilder
 
   public SpannerCqlSessionBuilder setNumGrpcChannels(int numGrpcChannels) {
     this.numGrpcChannels = numGrpcChannels;
+    return this;
+  }
+
+  /**
+   * Sets whether to enable or disable built in metrics Built in metrics are disabled by default.
+   */
+  public SpannerCqlSessionBuilder setBuiltInMetricsEnabled(boolean enableBuiltInMetrics) {
+    this.enableBuiltInMetrics = enableBuiltInMetrics;
     return this;
   }
 
@@ -158,7 +167,7 @@ public final class SpannerCqlSessionBuilder
   }
 
   private void createAndStartAdapter() {
-    adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels);
+    adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels, enableBuiltInMetrics);
     adapter.start();
   }
 }

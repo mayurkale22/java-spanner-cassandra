@@ -73,7 +73,7 @@ final class DriverConnectionHandler implements Runnable {
         BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream())) {
 
       processRequest(inputStream, outputStream);
-
+      adapterClientWrapper.getMetricsRecorder().recordOperationCount(1, null);
     } catch (IOException e) {
       LOG.error(
           "Exception handling connection from {}: {}",
