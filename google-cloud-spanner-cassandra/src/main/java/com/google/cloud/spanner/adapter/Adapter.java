@@ -22,7 +22,6 @@ import com.google.api.gax.rpc.HeaderProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.spanner.adapter.v1.AdapterClient;
 import com.google.spanner.adapter.v1.AdapterSettings;
-import io.opentelemetry.api.OpenTelemetry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -74,7 +73,6 @@ final class Adapter {
       int port,
       int numGrpcChannels,
       boolean enableBuiltInMetrics) {
-    LOG.info("*** inside Adapter class");
     this.databaseUri = databaseUri;
     this.inetAddress = inetAddress;
     this.port = port;
@@ -106,16 +104,6 @@ final class Adapter {
       HeaderProvider headerProvider =
           FixedHeaderProvider.create(RESOURCE_PREFIX_HEADER_KEY, databaseUri);
 
-      OpenTelemetry openTelemetry = OpenTelemetry.noop();
-      if (enableBuiltInMetrics) {
-        openTelemetry = builtInMetricsProvider.getOrCreateOpenTelemetry(databaseUri, credentials);
-      }
-      MetricsRecorder metricsRecorder =
-          new MetricsRecorder(
-              openTelemetry,
-              BuiltInMetricsConstant.METER_NAME,
-              builtInMetricsProvider.createClientAttributes());
-
       final String env_var_endpoint = System.getenv(ENV_VAR_SPANNER_ENDPOINT);
 
       AdapterSettings settings =
@@ -134,8 +122,7 @@ final class Adapter {
       sessionManager.getSession();
 
       adapterClientWrapper =
-          new AdapterClientWrapper(
-              adapterClient, attachmentsCache, sessionManager, metricsRecorder);
+          new AdapterClientWrapper(adapterClient, attachmentsCache, sessionManager);
 
       // Start listening on the specified host and port.
       serverSocket = new ServerSocket(port, DEFAULT_CONNECTION_BACKLOG, inetAddress);

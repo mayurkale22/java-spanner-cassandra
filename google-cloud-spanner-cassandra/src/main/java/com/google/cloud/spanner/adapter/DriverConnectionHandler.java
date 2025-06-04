@@ -20,7 +20,6 @@ import static com.google.cloud.spanner.adapter.util.ErrorMessageUtils.serverErro
 import static com.google.cloud.spanner.adapter.util.ErrorMessageUtils.unpreparedResponse;
 
 import com.datastax.oss.driver.internal.core.protocol.ByteBufPrimitiveCodec;
-import com.datastax.oss.driver.internal.core.util.ProtocolUtils;
 import com.datastax.oss.protocol.internal.Compressor;
 import com.datastax.oss.protocol.internal.Frame;
 import com.datastax.oss.protocol.internal.FrameCodec;
@@ -41,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.threeten.bp.Instant;
 
 /** Handles the connection from a driver, translating TCP data to gRPC requests and vice versa. */
 final class DriverConnectionHandler implements Runnable {
@@ -96,8 +94,6 @@ final class DriverConnectionHandler implements Runnable {
     while (true) {
       Map<String, String> attachments = new HashMap<>();
       Optional<byte[]> responseOptional; // Using Optional to handle different response scenarios
-      long startTime = System.nanoTime();
-      int opcode = 0;
       try {
         // 1. Read and construct the payload from the input stream
         byte[] payload = constructPayload(inputStream);
@@ -106,7 +102,6 @@ final class DriverConnectionHandler implements Runnable {
         if (payload.length == 0) {
           break; // Break out of the loop gracefully in case of EOF
         }
-        opcode = getOpcode(payload, 4);
         // 3. Attempt to prepare Cassandra attachments.
         // This might return:
         //    - An Optional containing a specific response (e.g., an error related to
@@ -142,20 +137,15 @@ final class DriverConnectionHandler implements Runnable {
                 return serverErrorResponse("No response received from the server.");
               });
 
-      Map<String, String> attributes = new HashMap<>();
-      attributes.put("database", "analytics");
-      attributes.put("method", "Adapter." + ProtocolUtils.opcodeString(opcode));
-      attributes.put("status", "NOT_FOUND");
-      adapterClientWrapper.getMetricsRecorder().recordOperationCount(1, attributes);
+      // Map<String, String> attributes = new HashMap<>();
+      // attributes.put("database", "analytics");
+      // attributes.put("method", "AdaptMessage");
+      // attributes.put("status", "NOT_FOUND");
+      // adapterClientWrapper.getMetricsRecorder().recordOperationCount(1, attributes);
 
       // 7. Write the determined response (success or error) to the output stream.
       outputStream.write(responseToWrite);
       outputStream.flush();
-      long endTime = System.nanoTime();
-
-      long durationNanos = endTime - startTime;
-      double elapsedTimeMs = (double) durationNanos / 1_000_000.0;
-      System.out.printf(Instant.now() + " : Operation took %.3f ms%n", elapsedTimeMs);
     }
   }
 

@@ -26,7 +26,6 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.google.cloud.spanner.adapter.SpannerCqlSession;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.time.Instant;
 
 // This sample assumes your spanner database <my_db> contains a table <users>
 // with the following schema:
@@ -68,18 +67,8 @@ class QuickStartSample {
           session.prepare("INSERT INTO usertable (id, field0) VALUES (?, ?)");
       int i = 0;
       while (true) {
-        System.out.println(Instant.now() + " : Starting request");
         BoundStatement boundInsert = insertStatement.bind("hello" + i++, "Mayur");
         session.execute(boundInsert);
-        System.out.println(Instant.now() + " : Finished request");
-
-        try {
-          if (i % 10 == 0) {
-            session.prepare("INSERT INTO usertable1 (id, field0) VALUES (?, ?) USING TTL 0");
-          }
-        } catch (Exception e) {
-          System.out.println("query failed");
-        }
 
         try {
           Thread.sleep(10000); // Sleep for 2 seconds to avoid busy-waiting

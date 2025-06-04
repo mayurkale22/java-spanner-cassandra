@@ -48,7 +48,6 @@ public final class AdapterClientWrapperTest {
   private final ServerStreamingCallable<AdaptMessageRequest, AdaptMessageResponse> mockCallable =
       mock(ServerStreamingCallable.class);
   private final SessionManager mockSessionManager = mock(SessionManager.class);
-  private final MetricsRecorder mockMetricsRecorder = mock(MetricsRecorder.class);
 
   private AdapterClientWrapper adapterClientWrapper;
 
@@ -62,8 +61,7 @@ public final class AdapterClientWrapperTest {
     when(mockSessionManager.getSession()).thenReturn(mockSession);
     when(mockSession.getName()).thenReturn("test-session");
     adapterClientWrapper =
-        new AdapterClientWrapper(
-            mockAdapterClient, attachmentsCache, mockSessionManager, mockMetricsRecorder);
+        new AdapterClientWrapper(mockAdapterClient, attachmentsCache, mockSessionManager);
   }
 
   @Test

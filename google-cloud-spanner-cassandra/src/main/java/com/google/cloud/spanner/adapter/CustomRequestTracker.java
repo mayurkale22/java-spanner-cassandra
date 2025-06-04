@@ -20,7 +20,14 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.tracker.RequestTracker;
+import com.datastax.oss.driver.internal.core.cql.DefaultBoundStatement;
+import com.datastax.oss.driver.internal.core.cql.DefaultSimpleStatement;
+import com.google.auth.oauth2.GoogleCredentials;
+import io.opentelemetry.api.OpenTelemetry;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +37,27 @@ enum CustomRequestTracker implements RequestTracker {
 
   private static final Logger LOG = LoggerFactory.getLogger(CustomRequestTracker.class);
 
+  private final BuiltInMetricsProvider builtInMetricsProvider = BuiltInMetricsProvider.INSTANCE;
+  private final MetricsRecorder metricsRecorder;
+
+  private CustomRequestTracker() {
+
+    GoogleCredentials credentials = null;
+    try {
+      credentials = GoogleCredentials.getApplicationDefault();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    OpenTelemetry openTelemetry =
+        builtInMetricsProvider.getOrCreateOpenTelemetry("databaseuri", credentials);
+    metricsRecorder =
+        new MetricsRecorder(
+            openTelemetry,
+            BuiltInMetricsConstant.METER_NAME,
+            builtInMetricsProvider.createClientAttributes());
+  }
+
   @Override
   public void onSuccess(
       @NonNull Request request,
@@ -38,9 +66,22 @@ enum CustomRequestTracker implements RequestTracker {
       @NonNull Node node,
       @NonNull String requestLogPrefix) {
 
-    double elapsedTimeMs = (double) latencyNanos / 1_000_000.0;
+    String postfix = "";
+    if (request instanceof DefaultBoundStatement) {
+      postfix = "EXECUTE";
+    } else if (request instanceof DefaultSimpleStatement) {
+      postfix = "QUERY";
+    }
+
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put("database", "analytics2");
+    attributes.put("method", "AdaptMessage." + postfix);
+    attributes.put("status", "OK");
+    double latencyMillis = (double) latencyNanos / 1_000_000.0;
     System.out.println(
-        Instant.now() + " : " + request.getClass().getSimpleName() + " - " + elapsedTimeMs + " ms");
+        Instant.now() + " : " + request.getClass().getSimpleName() + " - " + latencyMillis + " ms");
+    metricsRecorder.recordOperationCount(1, attributes);
+    // metricsRecorder.recordOperationLatency(latencyMillis, attributes);
   }
 
   @Override

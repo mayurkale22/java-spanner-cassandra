@@ -68,8 +68,6 @@ public final class DriverConnectionHandlerTest {
     mockSocket = mock(Socket.class);
     outputStream = new ByteArrayOutputStream();
     when(mockSocket.getOutputStream()).thenReturn(outputStream);
-    MetricsRecorder mockMetricsRecorder = mock(MetricsRecorder.class);
-    when(mockAdapterClient.getMetricsRecorder()).thenReturn(mockMetricsRecorder);
   }
 
   @Test

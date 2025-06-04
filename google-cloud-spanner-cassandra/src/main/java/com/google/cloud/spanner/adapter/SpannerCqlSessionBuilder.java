@@ -166,11 +166,8 @@ public final class SpannerCqlSessionBuilder
   }
 
   private void createAndStartAdapter() {
-    // this.withRequestTracker(new CustomRequestTracker());
-
-    System.out.println("** enableBuiltInMetrics: " + enableBuiltInMetrics);
     this.addRequestTracker(CustomRequestTracker.INSTANCE);
-    adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels, enableBuiltInMetrics);
+    adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels, false);
     adapter.start();
   }
 }
