@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.cloud.spanner.adapter;
 
 import com.google.api.gax.core.GaxProperties;
+import com.google.common.base.Preconditions;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -28,8 +29,9 @@ public class MetricsRecorder {
 
   private final LongCounter operationCountRecorder;
   private final DoubleHistogram operationLatencyRecorder;
+  private final Map<String, String> clientAttr;
 
-  MetricsRecorder(OpenTelemetry openTelemetry, String serviceName) {
+  MetricsRecorder(OpenTelemetry openTelemetry, String serviceName, Map<String, String> clientAttr) {
     Meter meter =
         openTelemetry
             .meterBuilder(BuiltInMetricsConstant.SPANNER_METER_NAME)
@@ -49,6 +51,7 @@ public class MetricsRecorder {
             .setDescription("Number of Operations")
             .setUnit("1")
             .build();
+    this.clientAttr = clientAttr;
   }
 
   public void recordOperationLatency(double operationLatency, Map<String, String> attributes) {
@@ -60,9 +63,10 @@ public class MetricsRecorder {
   }
 
   Attributes toOtelAttributes(Map<String, String> attributes) {
-    // Preconditions.checkNotNull(attributes, "Attributes map cannot be null");
+    Preconditions.checkNotNull(attributes, "Attributes map cannot be null");
     AttributesBuilder attributesBuilder = Attributes.builder();
-    // attributes.forEach(attributesBuilder::put);
+    attributes.forEach(attributesBuilder::put);
+    this.clientAttr.forEach(attributesBuilder::put);
     return attributesBuilder.build();
   }
 }

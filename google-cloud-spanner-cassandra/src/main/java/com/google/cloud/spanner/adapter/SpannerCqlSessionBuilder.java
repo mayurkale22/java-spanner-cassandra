@@ -94,7 +94,6 @@ public final class SpannerCqlSessionBuilder
    */
   @Override
   public CompletionStage<SpannerCqlSession> buildAsync() {
-
     try {
       checkAdapterSettings();
     } catch (UnknownHostException | RuntimeException e) {
@@ -167,6 +166,10 @@ public final class SpannerCqlSessionBuilder
   }
 
   private void createAndStartAdapter() {
+    // this.withRequestTracker(new CustomRequestTracker());
+
+    System.out.println("** enableBuiltInMetrics: " + enableBuiltInMetrics);
+    this.addRequestTracker(CustomRequestTracker.INSTANCE);
     adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels, enableBuiltInMetrics);
     adapter.start();
   }

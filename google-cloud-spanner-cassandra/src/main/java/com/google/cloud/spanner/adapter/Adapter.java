@@ -74,6 +74,7 @@ final class Adapter {
       int port,
       int numGrpcChannels,
       boolean enableBuiltInMetrics) {
+    LOG.info("*** inside Adapter class");
     this.databaseUri = databaseUri;
     this.inetAddress = inetAddress;
     this.port = port;
@@ -110,7 +111,10 @@ final class Adapter {
         openTelemetry = builtInMetricsProvider.getOrCreateOpenTelemetry(databaseUri, credentials);
       }
       MetricsRecorder metricsRecorder =
-          new MetricsRecorder(openTelemetry, BuiltInMetricsConstant.METER_NAME);
+          new MetricsRecorder(
+              openTelemetry,
+              BuiltInMetricsConstant.METER_NAME,
+              builtInMetricsProvider.createClientAttributes());
 
       final String env_var_endpoint = System.getenv(ENV_VAR_SPANNER_ENDPOINT);
 
@@ -135,7 +139,7 @@ final class Adapter {
 
       // Start listening on the specified host and port.
       serverSocket = new ServerSocket(port, DEFAULT_CONNECTION_BACKLOG, inetAddress);
-      LOG.info("Local TCP server started on {}:{}", inetAddress, port);
+      LOG.info("Local TCP server started 11 on {}:{}", inetAddress, port);
 
       executor = Executors.newCachedThreadPool();
 
