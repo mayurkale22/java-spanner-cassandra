@@ -40,14 +40,14 @@ public class MetricsRecorder {
 
     this.operationLatencyRecorder =
         meter
-            .histogramBuilder(serviceName + "/operation_latency")
+            .histogramBuilder(serviceName + "/" + BuiltInMetricsConstant.OPERATION_LATENCIES_NAME)
             .setDescription("Total time until final operation success or failure.")
             .setUnit("ms")
             .build();
 
     this.operationCountRecorder =
         meter
-            .counterBuilder(serviceName + "/operation_count")
+            .counterBuilder(serviceName + "/" + BuiltInMetricsConstant.OPERATION_COUNT_NAME)
             .setDescription("Number of Operations")
             .setUnit("1")
             .build();

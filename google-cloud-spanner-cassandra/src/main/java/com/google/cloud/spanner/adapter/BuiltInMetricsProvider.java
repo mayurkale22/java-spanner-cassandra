@@ -24,6 +24,7 @@ import static com.google.cloud.spanner.adapter.BuiltInMetricsConstant.INSTANCE_I
 import static com.google.cloud.spanner.adapter.BuiltInMetricsConstant.LOCATION_ID_KEY;
 import static com.google.cloud.spanner.adapter.BuiltInMetricsConstant.PROJECT_ID_KEY;
 
+import com.google.api.gax.core.GaxProperties;
 import com.google.auth.Credentials;
 import com.google.cloud.opentelemetry.detection.AttributeKeys;
 import com.google.cloud.opentelemetry.detection.DetectedPlatform;
@@ -119,7 +120,9 @@ final class BuiltInMetricsProvider {
 
   Map<String, String> createClientAttributes() {
     Map<String, String> clientAttributes = new HashMap<>();
-    clientAttributes.put(CLIENT_NAME_KEY.getKey(), "spanner-cassandra-java");
+    clientAttributes.put(
+        CLIENT_NAME_KEY.getKey(),
+        "spanner-cassandra-java/" + GaxProperties.getLibraryVersion(getClass()));
     clientAttributes.put(CLIENT_UID_KEY.getKey(), getDefaultTaskValue());
     return clientAttributes;
   }

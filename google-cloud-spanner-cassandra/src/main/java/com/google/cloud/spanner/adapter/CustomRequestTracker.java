@@ -81,7 +81,7 @@ enum CustomRequestTracker implements RequestTracker {
     System.out.println(
         Instant.now() + " : " + request.getClass().getSimpleName() + " - " + latencyMillis + " ms");
     metricsRecorder.recordOperationCount(1, attributes);
-    // metricsRecorder.recordOperationLatency(latencyMillis, attributes);
+    metricsRecorder.recordOperationLatency(latencyMillis, attributes);
   }
 
   @Override
