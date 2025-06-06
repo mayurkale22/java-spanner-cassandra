@@ -25,7 +25,7 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import java.util.Map;
 
-/* Implementation for recording built in metrics. */
+/** Implementation for recording built in metrics. */
 public class BuiltInMetricsRecorder {
 
   private final LongCounter operationCountRecorder;

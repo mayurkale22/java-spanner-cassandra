@@ -51,7 +51,7 @@ public class BuiltInMetricsProviderTest {
     verifyHash(BuiltInMetricsProvider.generateClientHash(clientUid));
   }
 
-  private void verifyHash(String hash) {
+  private static void verifyHash(String hash) {
     // Check if the hash length is 6
     assertEquals(hash.length(), 6);
     // Check if the hash is in the range [000000, 0003ff]

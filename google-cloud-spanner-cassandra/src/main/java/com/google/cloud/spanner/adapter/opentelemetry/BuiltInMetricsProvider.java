@@ -55,6 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 
+/** Collects and publishes current values to Google metrics exporter. */
 final class BuiltInMetricsProvider {
 
   static BuiltInMetricsProvider INSTANCE = new BuiltInMetricsProvider();
@@ -69,41 +70,43 @@ final class BuiltInMetricsProvider {
 
   OpenTelemetry getOrCreateOpenTelemetry(
       String projectId, String instanceId, @Nullable Credentials credentials) {
-    if (this.openTelemetry == null) {
-      SdkMeterProviderBuilder sdkMeterProviderBuilder = SdkMeterProvider.builder();
-
-      MonitoredResourceDescription monitoredResourceDescription =
-          new MonitoredResourceDescription(
-              BuiltInMetricsConstant.SPANNER_RESOURCE_TYPE,
-              ImmutableSet.of(
-                  "project_id", "instance_id", "location", "instance_config", "client_hash"));
-
-      MetricExporter metricExporter =
-          GoogleCloudMetricExporter.createWithConfiguration(
-              MetricConfiguration.builder()
-                  .setProjectId(projectId)
-                  .setMonitoredResourceDescription(monitoredResourceDescription)
-                  .setInstrumentationLibraryLabelsEnabled(false)
-                  .setMetricServiceEndpoint("monitoring.googleapis.com:443")
-                  .setPrefix(BuiltInMetricsConstant.METER_NAME)
-                  .setUseServiceTimeSeries(true)
-                  .setResourceAttributesFilter(MetricConfiguration.NO_RESOURCE_ATTRIBUTES)
-                  .build());
-
-      sdkMeterProviderBuilder
-          .registerMetricReader(
-              PeriodicMetricReader.builder(metricExporter)
-                  .setInterval(java.time.Duration.ofSeconds(60))
-                  .build())
-          .addResource(Resource.create(createResourceAttributes(projectId, instanceId)));
-
-      // Register built-in metrics.
-      BuiltInMetricsConstant.getAllViews().forEach(sdkMeterProviderBuilder::registerView);
-
-      SdkMeterProvider sdkMeterProvider = sdkMeterProviderBuilder.build();
-      this.openTelemetry = OpenTelemetrySdk.builder().setMeterProvider(sdkMeterProvider).build();
-      Runtime.getRuntime().addShutdownHook(new Thread(sdkMeterProvider::close));
+    if (this.openTelemetry != null) {
+      return this.openTelemetry;
     }
+
+    SdkMeterProviderBuilder sdkMeterProviderBuilder = SdkMeterProvider.builder();
+
+    MonitoredResourceDescription monitoredResourceDescription =
+        new MonitoredResourceDescription(
+            BuiltInMetricsConstant.SPANNER_RESOURCE_TYPE,
+            ImmutableSet.of(
+                "project_id", "instance_id", "location", "instance_config", "client_hash"));
+
+    MetricExporter metricExporter =
+        GoogleCloudMetricExporter.createWithConfiguration(
+            MetricConfiguration.builder()
+                .setProjectId(projectId)
+                .setMonitoredResourceDescription(monitoredResourceDescription)
+                .setInstrumentationLibraryLabelsEnabled(false)
+                .setMetricServiceEndpoint("monitoring.googleapis.com:443")
+                .setPrefix(BuiltInMetricsConstant.METER_NAME)
+                .setUseServiceTimeSeries(true)
+                .setResourceAttributesFilter(MetricConfiguration.NO_RESOURCE_ATTRIBUTES)
+                .build());
+
+    sdkMeterProviderBuilder
+        .registerMetricReader(
+            PeriodicMetricReader.builder(metricExporter)
+                .setInterval(java.time.Duration.ofSeconds(60))
+                .build())
+        .addResource(Resource.create(createResourceAttributes(projectId, instanceId)));
+
+    // Register built-in metrics.
+    BuiltInMetricsConstant.getAllViews().forEach(sdkMeterProviderBuilder::registerView);
+
+    SdkMeterProvider sdkMeterProvider = sdkMeterProviderBuilder.build();
+    this.openTelemetry = OpenTelemetrySdk.builder().setMeterProvider(sdkMeterProvider).build();
+    Runtime.getRuntime().addShutdownHook(new Thread(sdkMeterProvider::close));
     return this.openTelemetry;
   }
 
