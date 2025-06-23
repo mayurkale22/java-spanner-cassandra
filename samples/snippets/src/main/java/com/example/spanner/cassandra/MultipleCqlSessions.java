@@ -40,9 +40,9 @@ public class MultipleCqlSessions {
     CqlSession session1 = null;
     CqlSession session2 = null;
     CqlSession session3 = null;
-    final String databaseUri1 = "<replace_with_your_uri_here>";
-    final String databaseUri2 = "<replace_with_your_uri_here>";
-    final String databaseUri3 = "<replace_with_your_uri_here>";
+    final String databaseUri1 = "<replace_with_your_database_uri_here>";
+    final String databaseUri2 = "<replace_with_your_database_uri_here>";
+    final String databaseUri3 = "<replace_with_your_database_uri_here>";
 
     try {
       System.out.println("Building Session 1...");
