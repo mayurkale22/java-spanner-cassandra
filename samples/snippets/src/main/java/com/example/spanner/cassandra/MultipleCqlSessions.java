@@ -45,7 +45,6 @@ public class MultipleCqlSessions {
     final String databaseUri3 = "<replace_with_your_uri_here>";
 
     try {
-      // --- Session 1: Connect to cluster1 database
       System.out.println("Building Session 1...");
       session1 =
           SpannerCqlSession.builder()
@@ -68,7 +67,6 @@ public class MultipleCqlSessions {
         System.out.println("Session 1 - user_id: " + row1.getString("user_id"));
       }
 
-      // --- Session 2: Connect to cluster2 database
       System.out.println("\nBuilding Session 2...");
       session2 =
           SpannerCqlSession.builder()
@@ -91,7 +89,6 @@ public class MultipleCqlSessions {
         System.out.println("Session 2 - user_id: " + row2.getUuid("user_id"));
       }
 
-      // --- Session 2: Connect to cluster3 database ---
       System.out.println("\nBuilding Session 3...");
       session3 =
           SpannerCqlSession.builder()
