@@ -40,13 +40,12 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 final class Adapter {
   private static final Logger LOG = LoggerFactory.getLogger(Adapter.class);
-  private static final String DEFAULT_SPANNER_ENDPOINT = "spanner.googleapis.com:443";
   private static final String RESOURCE_PREFIX_HEADER_KEY = "google-cloud-resource-prefix";
   private static final long MAX_GLOBAL_STATE_SIZE = (long) (1e8 / 256); // ~100 MB
   private static final int DEFAULT_CONNECTION_BACKLOG = 50;
   private static final String ENV_VAR_GOOGLE_SPANNER_ENABLE_DIRECT_ACCESS =
       "GOOGLE_SPANNER_ENABLE_DIRECT_ACCESS";
-  private static final String ENV_VAR_SPANNER_ENDPOINT = "SPANNER_ENDPOINT";
+
   private static final String USER_AGENT_KEY = "user-agent";
   private static final String CLIENT_LIBRARY_LANGUAGE = "java-spanner-cassandra";
   private static final String CLIENT_VERSION = "0.3.0"; // {x-release-please-version}
@@ -58,6 +57,7 @@ final class Adapter {
 
   private final InetAddress inetAddress;
   private final int port;
+  private final String host;
   private final String databaseUri;
   private final int numGrpcChannels;
   private final Optional<Duration> maxCommitDelay;
@@ -77,6 +77,7 @@ final class Adapter {
    * @param maxCommitDelay The max commit delay to set in requests to optimize write throughput.
    */
   Adapter(
+      String host,
       String databaseUri,
       InetAddress inetAddress,
       int port,
@@ -84,6 +85,7 @@ final class Adapter {
       Optional<Duration> maxCommitDelay) {
     // TODO: Encapsulate arguments in an Options class to accomodate future fields without having to
     // pass them individually.
+    this.host = host;
     this.databaseUri = databaseUri;
     this.inetAddress = inetAddress;
     this.port = port;
@@ -111,16 +113,12 @@ final class Adapter {
         channelProviderBuilder.setAttemptDirectPath(true);
         channelProviderBuilder.setAttemptDirectPathXds();
       }
-
       HeaderProvider headerProvider =
           FixedHeaderProvider.create(
               RESOURCE_PREFIX_HEADER_KEY, databaseUri, USER_AGENT_KEY, DEFAULT_USER_AGENT);
-
-      final String env_var_endpoint = System.getenv(ENV_VAR_SPANNER_ENDPOINT);
-
       AdapterSettings settings =
           AdapterSettings.newBuilder()
-              .setEndpoint(env_var_endpoint != null ? env_var_endpoint : DEFAULT_SPANNER_ENDPOINT)
+              .setEndpoint(host)
               .setTransportChannelProvider(channelProviderBuilder.build())
               .setHeaderProvider(headerProvider)
               .build();

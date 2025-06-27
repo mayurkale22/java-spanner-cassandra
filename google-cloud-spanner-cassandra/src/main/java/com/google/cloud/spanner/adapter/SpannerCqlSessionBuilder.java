@@ -44,12 +44,15 @@ public final class SpannerCqlSessionBuilder
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final int DEFAULT_NUM_GRPC_CHANNELS = 4;
   private static final int LARGEST_MAX_COMMIT_DELAY_MILLIS = 500;
+  private static final String DEFAULT_SPANNER_ENDPOINT = "spanner.googleapis.com:443";
+  private static final String ENV_VAR_SPANNER_ENDPOINT = "SPANNER_ENDPOINT";
 
   private InetAddress iNetAddress;
   private int port;
   private Adapter adapter;
   private int numGrpcChannels = DEFAULT_NUM_GRPC_CHANNELS;
   private String databaseUri = null;
+  private String host = null;
   private Optional<Duration> maxCommitDelay = Optional.empty();
 
   /**
@@ -61,6 +64,17 @@ public final class SpannerCqlSessionBuilder
   @Override
   protected SpannerCqlSession wrap(CqlSession defaultSession) {
     return new SpannerCqlSession(defaultSession, adapter);
+  }
+
+  /**
+   * Sets the spanner host.
+   *
+   * @param host The spanner host.
+   * @return This builder instance.
+   */
+  public SpannerCqlSessionBuilder sethost(String host) {
+    this.host = host;
+    return this;
   }
 
   /**
@@ -122,10 +136,18 @@ public final class SpannerCqlSessionBuilder
   }
 
   private void checkAdapterSettings() throws UnknownHostException {
+    checkAndSetupHost();
     checkDatabaseUri();
     checkContactPoints();
     checkNumGrpcChannels();
     checkMaxCommitDelay();
+  }
+
+  private void checkAndSetupHost() {
+    if (host == null) {
+      final String env_var_endpoint = System.getenv(ENV_VAR_SPANNER_ENDPOINT);
+      host = env_var_endpoint != null ? env_var_endpoint : DEFAULT_SPANNER_ENDPOINT;
+    }
   }
 
   private void checkDatabaseUri() {
@@ -183,7 +205,7 @@ public final class SpannerCqlSessionBuilder
   }
 
   private void createAndStartAdapter() {
-    adapter = new Adapter(databaseUri, iNetAddress, port, numGrpcChannels, maxCommitDelay);
+    adapter = new Adapter(host, databaseUri, iNetAddress, port, numGrpcChannels, maxCommitDelay);
     adapter.start();
   }
 }

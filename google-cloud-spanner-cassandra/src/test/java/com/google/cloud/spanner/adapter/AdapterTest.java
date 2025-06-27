@@ -43,7 +43,7 @@ import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 public final class AdapterTest {
-
+  private static final String TEST_HOST = "localhost";
   private static final String TEST_DATABASE_URI =
       "projects/test-project/instances/test-instance/databases/test-db";
   private static final int TEST_PORT = 12345;
@@ -56,7 +56,8 @@ public final class AdapterTest {
 
   @Before
   public void setUp() {
-    adapter = new Adapter(TEST_DATABASE_URI, inetAddress, TEST_PORT, 4, Optional.empty());
+    adapter =
+        new Adapter(TEST_HOST, TEST_DATABASE_URI, inetAddress, TEST_PORT, 4, Optional.empty());
   }
 
   @Test

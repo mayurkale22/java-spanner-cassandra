@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SpannerCassandraLauncher {
   private static final Logger LOG = LoggerFactory.getLogger(SpannerCassandraLauncher.class);
+  private static final String DEFAULT_SPANNER_ENDPOINT = "spanner.googleapis.com:443";
   private static final String DATABASE_URI_PROP_KEY = "databaseUri";
   private static final String HOST_PROP_KEY = "host";
   private static final String PORT_PROP_KEY = "port";
@@ -86,7 +87,14 @@ public class SpannerCassandraLauncher {
           "Spanner database URI not set. Please set it using -DdatabaseUri option.");
     }
 
-    Adapter adapter = new Adapter(databaseUri, inetAddress, port, numGrpcChannels, maxCommitDelay);
+    Adapter adapter =
+        new Adapter(
+            DEFAULT_SPANNER_ENDPOINT,
+            databaseUri,
+            inetAddress,
+            port,
+            numGrpcChannels,
+            maxCommitDelay);
 
     Runtime.getRuntime()
         .addShutdownHook(
