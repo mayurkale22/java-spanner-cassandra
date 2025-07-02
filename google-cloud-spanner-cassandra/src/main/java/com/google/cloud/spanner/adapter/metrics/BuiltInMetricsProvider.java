@@ -70,7 +70,14 @@ public class BuiltInMetricsProvider {
   private BuiltInMetricsProvider() {}
 
   public OpenTelemetry getOrCreateOpenTelemetry(
-      String projectId, String instanceId, @Nullable Credentials credentials) {
+      boolean enableBuiltInMetrics,
+      String projectId,
+      String instanceId,
+      @Nullable Credentials credentials) {
+    if (!enableBuiltInMetrics) {
+      return OpenTelemetry.noop();
+    }
+
     if (this.openTelemetry != null) {
       return this.openTelemetry;
     }

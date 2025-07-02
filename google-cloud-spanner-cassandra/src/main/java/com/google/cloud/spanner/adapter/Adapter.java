@@ -47,8 +47,6 @@ final class Adapter {
   private static final Logger LOG = LoggerFactory.getLogger(Adapter.class);
 
   private final BuiltInMetricsProvider builtInMetricsProvider = BuiltInMetricsProvider.INSTANCE;
-  private final BuiltInMetricsRecorder metricsRecorder;
-
   private static final String RESOURCE_PREFIX_HEADER_KEY = "google-cloud-resource-prefix";
   private static final long MAX_GLOBAL_STATE_SIZE = (long) (1e8 / 256); // ~100 MB
   private static final int DEFAULT_CONNECTION_BACKLOG = 50;
@@ -70,6 +68,7 @@ final class Adapter {
   private final String databaseUri;
   private final int numGrpcChannels;
   private final Optional<Duration> maxCommitDelay;
+  private final boolean enableBuiltInMetrics;
   private AdapterClientWrapper adapterClientWrapper;
   private ServerSocket serverSocket;
   private ExecutorService executor;
@@ -91,7 +90,8 @@ final class Adapter {
       InetAddress inetAddress,
       int port,
       int numGrpcChannels,
-      Optional<Duration> maxCommitDelay) {
+      Optional<Duration> maxCommitDelay,
+      boolean enableBuiltInMetrics) {
     // TODO: Encapsulate arguments in an Options class to accomodate future fields without having to
     // pass them individually.
     this.host = host;
@@ -100,23 +100,7 @@ final class Adapter {
     this.port = port;
     this.numGrpcChannels = numGrpcChannels;
     this.maxCommitDelay = maxCommitDelay;
-
-    GoogleCredentials credentials = null;
-    try {
-      credentials = GoogleCredentials.getApplicationDefault();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    DatabaseName databaseName = DatabaseName.parse(databaseUri);
-    OpenTelemetry openTelemetry =
-        builtInMetricsProvider.getOrCreateOpenTelemetry(
-            databaseName.getProject(), databaseName.getInstance(), credentials);
-    metricsRecorder =
-        new BuiltInMetricsRecorder(
-            openTelemetry,
-            BuiltInMetricsConstant.METER_NAME,
-            builtInMetricsProvider.createDefaultAttributes(databaseName.getDatabase()));
+    this.enableBuiltInMetrics = enableBuiltInMetrics;
   }
 
   /** Starts the adapter, initializing the local TCP server and handling client connections. */
@@ -149,6 +133,19 @@ final class Adapter {
               .setHeaderProvider(headerProvider)
               .build();
 
+      DatabaseName databaseName = DatabaseName.parse(databaseUri);
+      OpenTelemetry openTelemetry =
+          builtInMetricsProvider.getOrCreateOpenTelemetry(
+              enableBuiltInMetrics,
+              databaseName.getProject(),
+              databaseName.getInstance(),
+              credentials);
+      BuiltInMetricsRecorder metricsRecorder =
+          new BuiltInMetricsRecorder(
+              openTelemetry,
+              BuiltInMetricsConstant.METER_NAME,
+              builtInMetricsProvider.createDefaultAttributes(databaseName.getDatabase()));
+
       AdapterClient adapterClient = AdapterClient.create(settings);
 
       AttachmentsCache attachmentsCache = new AttachmentsCache(MAX_GLOBAL_STATE_SIZE);
@@ -158,7 +155,8 @@ final class Adapter {
       sessionManager.getSession();
 
       adapterClientWrapper =
-          new AdapterClientWrapper(adapterClient, attachmentsCache, sessionManager);
+          new AdapterClientWrapper(
+              adapterClient, attachmentsCache, sessionManager, metricsRecorder);
 
       // Start listening on the specified host and port.
       serverSocket = new ServerSocket(port, DEFAULT_CONNECTION_BACKLOG, inetAddress);
@@ -197,8 +195,7 @@ final class Adapter {
       while (!Thread.currentThread().isInterrupted()) {
         final Socket clientSocket = serverSocket.accept();
         executor.execute(
-            new DriverConnectionHandler(
-                clientSocket, adapterClientWrapper, maxCommitDelay, metricsRecorder));
+            new DriverConnectionHandler(clientSocket, adapterClientWrapper, maxCommitDelay));
         LOG.info("Accepted client connection from: {}", clientSocket.getRemoteSocketAddress());
       }
     } catch (SocketException e) {

@@ -66,6 +66,7 @@ public class SpannerCassandraLauncher {
   private static final String DEFAULT_PORT = "9042";
   private static final String DEFAULT_NUM_GRPC_CHANNELS = "4";
   private static final String MAX_COMMIT_DELAY_PROP_KEY = "maxCommitDelayMillis";
+  private static final String ENABLE_BUILTIN_METRICS_PROP_KEY = "enableBuiltInMetrics";
 
   public static void main(String[] args) throws Exception {
     final String databaseUri = System.getProperty(DATABASE_URI_PROP_KEY);
@@ -81,6 +82,8 @@ public class SpannerCassandraLauncher {
     } else {
       maxCommitDelay = Optional.empty();
     }
+    final boolean enableBuiltInMetrics =
+        Boolean.parseBoolean(System.getProperty(ENABLE_BUILTIN_METRICS_PROP_KEY, "false"));
 
     if (databaseUri == null) {
       throw new IllegalArgumentException(
@@ -94,7 +97,8 @@ public class SpannerCassandraLauncher {
             inetAddress,
             port,
             numGrpcChannels,
-            maxCommitDelay);
+            maxCommitDelay,
+            enableBuiltInMetrics);
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -109,12 +113,13 @@ public class SpannerCassandraLauncher {
 
     LOG.info(
         "Starting Adapter for Spanner database {} on {}:{} with {} gRPC channels and max commit"
-            + " delay of {}...",
+            + " delay of {} and built-in metrics enabled: {}",
         databaseUri,
         inetAddress,
         port,
         numGrpcChannels,
-        maxCommitDelayProperty);
+        maxCommitDelayProperty,
+        enableBuiltInMetrics);
 
     adapter.start();
 
