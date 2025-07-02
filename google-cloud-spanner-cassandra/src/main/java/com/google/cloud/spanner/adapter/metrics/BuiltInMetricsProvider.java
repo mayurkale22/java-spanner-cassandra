@@ -19,6 +19,7 @@ import static com.google.cloud.opentelemetry.detection.GCPPlatformDetector.Suppo
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.CLIENT_HASH_KEY;
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.CLIENT_NAME_KEY;
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.CLIENT_UID_KEY;
+import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.DATABASE_KEY;
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.INSTANCE_CONFIG_ID_KEY;
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.INSTANCE_ID_KEY;
 import static com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant.LOCATION_ID_KEY;
@@ -123,13 +124,14 @@ public class BuiltInMetricsProvider {
     return attributesBuilder.build();
   }
 
-  public Map<String, String> createClientAttributes() {
-    Map<String, String> clientAttributes = new HashMap<>();
-    clientAttributes.put(
+  public Map<String, String> createDefaultAttributes(String databaseId) {
+    Map<String, String> defaultAttributes = new HashMap<>();
+    defaultAttributes.put(DATABASE_KEY.getKey(), databaseId);
+    defaultAttributes.put(
         CLIENT_NAME_KEY.getKey(),
         "spanner-cassandra-java/" + GaxProperties.getLibraryVersion(getClass()));
-    clientAttributes.put(CLIENT_UID_KEY.getKey(), getDefaultTaskValue());
-    return clientAttributes;
+    defaultAttributes.put(CLIENT_UID_KEY.getKey(), getDefaultTaskValue());
+    return defaultAttributes;
   }
 
   /**

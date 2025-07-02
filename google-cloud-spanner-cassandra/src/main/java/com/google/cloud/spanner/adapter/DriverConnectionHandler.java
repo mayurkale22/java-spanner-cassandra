@@ -178,15 +178,13 @@ final class DriverConnectionHandler implements Runnable {
       // 7. Write the determined response (success or error) to the output stream.
       outputStream.write(responseToWrite);
       outputStream.flush();
-      Instant endTime = Instant.now();
       if (metricsRecorder != null) {
         Map<String, String> attributes = new HashMap<>();
-        attributes.put("database", "analytics2");
         attributes.put("method", "AdaptMessage." + prepareResult.opcodeString());
         attributes.put("status", "OK");
         metricsRecorder.recordOperationCount(1, attributes);
         metricsRecorder.recordOperationLatency(
-            Duration.between(startTime, endTime).toMillis(), attributes);
+            Duration.between(startTime, Instant.now()).toMillis(), attributes);
       }
     }
   }

@@ -26,6 +26,7 @@ import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsProvider;
 import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsRecorder;
 import com.google.spanner.adapter.v1.AdapterClient;
 import com.google.spanner.adapter.v1.AdapterSettings;
+import com.google.spanner.adapter.v1.DatabaseName;
 import io.opentelemetry.api.OpenTelemetry;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -107,13 +108,15 @@ final class Adapter {
       e.printStackTrace();
     }
 
+    DatabaseName databaseName = DatabaseName.parse(databaseUri);
     OpenTelemetry openTelemetry =
-        builtInMetricsProvider.getOrCreateOpenTelemetry("span-cloud-testing", "c2sp", credentials);
+        builtInMetricsProvider.getOrCreateOpenTelemetry(
+            databaseName.getProject(), databaseName.getInstance(), credentials);
     metricsRecorder =
         new BuiltInMetricsRecorder(
             openTelemetry,
             BuiltInMetricsConstant.METER_NAME,
-            builtInMetricsProvider.createClientAttributes());
+            builtInMetricsProvider.createDefaultAttributes(databaseName.getDatabase()));
   }
 
   /** Starts the adapter, initializing the local TCP server and handling client connections. */

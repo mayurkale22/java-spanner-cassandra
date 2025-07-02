@@ -30,7 +30,7 @@ public class BuiltInMetricsRecorder {
 
   private final LongCounter operationCountRecorder;
   private final DoubleHistogram operationLatencyRecorder;
-  private final Map<String, String> clientAttr;
+  private final Map<String, String> defaultAttr;
 
   /**
    * Creates the following instruments for the following metrics:
@@ -42,10 +42,10 @@ public class BuiltInMetricsRecorder {
    *
    * @param openTelemetry OpenTelemetry instance
    * @param serviceName Service Name
-   * @param clientAttr Client attibutes
+   * @param defaultAttr Default attibutes
    */
   public BuiltInMetricsRecorder(
-      OpenTelemetry openTelemetry, String serviceName, Map<String, String> clientAttr) {
+      OpenTelemetry openTelemetry, String serviceName, Map<String, String> defaultAttr) {
     Meter meter =
         openTelemetry
             .meterBuilder(BuiltInMetricsConstant.SPANNER_METER_NAME)
@@ -65,7 +65,7 @@ public class BuiltInMetricsRecorder {
             .setDescription("Number of Operations")
             .setUnit("1")
             .build();
-    this.clientAttr = clientAttr;
+    this.defaultAttr = defaultAttr;
   }
 
   public void recordOperationLatency(double operationLatency, Map<String, String> attributes) {
@@ -80,7 +80,7 @@ public class BuiltInMetricsRecorder {
     Preconditions.checkNotNull(attributes, "Attributes map cannot be null");
     AttributesBuilder attributesBuilder = Attributes.builder();
     attributes.forEach(attributesBuilder::put);
-    this.clientAttr.forEach(attributesBuilder::put);
+    this.defaultAttr.forEach(attributesBuilder::put);
     return attributesBuilder.build();
   }
 }
