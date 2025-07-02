@@ -29,6 +29,7 @@ import com.datastax.oss.protocol.internal.request.Execute;
 import com.datastax.oss.protocol.internal.request.Query;
 import com.google.api.gax.grpc.GrpcCallContext;
 import com.google.api.gax.rpc.ApiCallContext;
+import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsRecorder;
 import com.google.common.collect.ImmutableMap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -42,6 +43,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +69,8 @@ final class DriverConnectionHandler implements Runnable {
   private final Optional<String> maxCommitDelayMillis;
   private final GrpcCallContext defaultContext;
   private final GrpcCallContext defaultContextWithLAR;
+  private final BuiltInMetricsRecorder metricsRecorder;
+
   private static final Map<String, List<String>> ROUTE_TO_LEADER_HEADER_MAP =
       ImmutableMap.of(ROUTE_TO_LEADER_HEADER_KEY, Collections.singletonList("true"));
 
@@ -78,7 +82,10 @@ final class DriverConnectionHandler implements Runnable {
    * @param maxCommitDelay The max commit delay to set in requests to optimize write throughput.
    */
   public DriverConnectionHandler(
-      Socket socket, AdapterClientWrapper adapterClientWrapper, Optional<Duration> maxCommitDelay) {
+      Socket socket,
+      AdapterClientWrapper adapterClientWrapper,
+      Optional<Duration> maxCommitDelay,
+      BuiltInMetricsRecorder metricsRecorder) {
     this.socket = socket;
     this.adapterClientWrapper = adapterClientWrapper;
     this.defaultContext = GrpcCallContext.createDefault();
@@ -89,10 +96,11 @@ final class DriverConnectionHandler implements Runnable {
     } else {
       this.maxCommitDelayMillis = Optional.empty();
     }
+    this.metricsRecorder = metricsRecorder;
   }
 
   public DriverConnectionHandler(Socket socket, AdapterClientWrapper adapterClientWrapper) {
-    this(socket, adapterClientWrapper, Optional.empty());
+    this(socket, adapterClientWrapper, Optional.empty(), null);
   }
 
   /** Runs the connection handler, processing incoming TCP data and sending gRPC requests. */
@@ -122,7 +130,9 @@ final class DriverConnectionHandler implements Runnable {
       throws IOException {
     // Keep processing until End-Of-Stream is reached on the input
     while (true) {
+      Instant startTime = Instant.now();
       Optional<byte[]> response;
+      PreparePayloadResult prepareResult = null;
       try {
         // 1. Read and construct the payload from the input stream
         byte[] payload = constructPayload(inputStream);
@@ -133,7 +143,7 @@ final class DriverConnectionHandler implements Runnable {
         }
 
         // 3. Prepare the payload.
-        PreparePayloadResult prepareResult = preparePayload(payload);
+        prepareResult = preparePayload(payload);
         response = prepareResult.getAttachmentErrorResponse();
 
         // 4. If attachment preparation didn't yield an immediate response, send the gRPC request.
@@ -143,7 +153,6 @@ final class DriverConnectionHandler implements Runnable {
                   payload, prepareResult.getAttachments(), prepareResult.getContext());
           // Now response holds the gRPC result, which might still be empty.
         }
-
       } catch (RuntimeException e) {
         // 5. Handle any error during payload construction or attachment processing.
         // Create a server error response to send back to the client.
@@ -169,6 +178,16 @@ final class DriverConnectionHandler implements Runnable {
       // 7. Write the determined response (success or error) to the output stream.
       outputStream.write(responseToWrite);
       outputStream.flush();
+      Instant endTime = Instant.now();
+      if (metricsRecorder != null) {
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("database", "analytics2");
+        attributes.put("method", "AdaptMessage." + prepareResult.opcodeString());
+        attributes.put("status", "OK");
+        metricsRecorder.recordOperationCount(1, attributes);
+        metricsRecorder.recordOperationLatency(
+            Duration.between(startTime, endTime).toMillis(), attributes);
+      }
     }
   }
 
@@ -268,7 +287,7 @@ final class DriverConnectionHandler implements Runnable {
     } else if (frame.message instanceof Query) {
       return prepareQueryMessage((Query) frame.message, attachments);
     } else {
-      return new PreparePayloadResult(defaultContext);
+      return new PreparePayloadResult(frame.message.opcode, defaultContext);
     }
   }
 
@@ -286,7 +305,7 @@ final class DriverConnectionHandler implements Runnable {
       context = defaultContext;
     }
     Optional<byte[]> errorResponse = prepareAttachmentForQueryId(attachments, message.queryId);
-    return new PreparePayloadResult(context, attachments, errorResponse);
+    return new PreparePayloadResult(message.opcode, context, attachments, errorResponse);
   }
 
   private PreparePayloadResult prepareBatchMessage(Batch message, Map<String, String> attachments) {
@@ -303,7 +322,8 @@ final class DriverConnectionHandler implements Runnable {
     if (maxCommitDelayMillis.isPresent()) {
       attachments.put(MAX_COMMIT_DELAY_ATTACHMENT_KEY, maxCommitDelayMillis.get());
     }
-    return new PreparePayloadResult(defaultContextWithLAR, attachments, attachmentErrorResponse);
+    return new PreparePayloadResult(
+        message.opcode, defaultContextWithLAR, attachments, attachmentErrorResponse);
   }
 
   private PreparePayloadResult prepareQueryMessage(Query message, Map<String, String> attachments) {
@@ -316,7 +336,7 @@ final class DriverConnectionHandler implements Runnable {
         attachments.put(MAX_COMMIT_DELAY_ATTACHMENT_KEY, maxCommitDelayMillis.get());
       }
     }
-    return new PreparePayloadResult(context, attachments);
+    return new PreparePayloadResult(message.opcode, context, attachments);
   }
 
   private Optional<byte[]> prepareAttachmentForQueryId(

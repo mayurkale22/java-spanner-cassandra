@@ -16,6 +16,7 @@ limitations under the License.
 
 package com.google.cloud.spanner.adapter;
 
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.api.gax.rpc.ApiCallContext;
 import java.util.Collections;
 import java.util.Map;
@@ -26,26 +27,29 @@ import java.util.Optional;
  * gRPC request.
  */
 public class PreparePayloadResult {
+  private int opcode;
   private ApiCallContext context;
   private Map<String, String> attachments;
   private Optional<byte[]> attachmentErrorResponse;
   private static final Map<String, String> EMPTY_ATTACHMENTS = Collections.emptyMap();
 
   public PreparePayloadResult(
+      int opcode,
       ApiCallContext context,
       Map<String, String> attachments,
       Optional<byte[]> attachmentErrorResponse) {
+    this.opcode = opcode;
     this.context = context;
     this.attachments = attachments;
     this.attachmentErrorResponse = attachmentErrorResponse;
   }
 
-  public PreparePayloadResult(ApiCallContext context, Map<String, String> attachments) {
-    this(context, attachments, Optional.empty());
+  public PreparePayloadResult(int opcode, ApiCallContext context, Map<String, String> attachments) {
+    this(opcode, context, attachments, Optional.empty());
   }
 
-  public PreparePayloadResult(ApiCallContext context) {
-    this(context, EMPTY_ATTACHMENTS, Optional.empty());
+  public PreparePayloadResult(int opcode, ApiCallContext context) {
+    this(opcode, context, EMPTY_ATTACHMENTS, Optional.empty());
   }
 
   public Map<String, String> getAttachments() {
@@ -58,5 +62,44 @@ public class PreparePayloadResult {
 
   public ApiCallContext getContext() {
     return context;
+  }
+
+  public String opcodeString() {
+    switch (opcode) {
+      case ProtocolConstants.Opcode.EXECUTE:
+        return "EXECUTE";
+      case ProtocolConstants.Opcode.PREPARE:
+        return "PREPARE";
+      case ProtocolConstants.Opcode.QUERY:
+        return "QUERY";
+      case ProtocolConstants.Opcode.BATCH:
+        return "BATCH";
+      case ProtocolConstants.Opcode.OPTIONS:
+        return "OPTIONS";
+      case ProtocolConstants.Opcode.ERROR:
+        return "ERROR";
+      case ProtocolConstants.Opcode.STARTUP:
+        return "STARTUP";
+      case ProtocolConstants.Opcode.READY:
+        return "READY";
+      case ProtocolConstants.Opcode.AUTHENTICATE:
+        return "AUTHENTICATE";
+      case ProtocolConstants.Opcode.SUPPORTED:
+        return "SUPPORTED";
+      case ProtocolConstants.Opcode.RESULT:
+        return "RESULT";
+      case ProtocolConstants.Opcode.REGISTER:
+        return "REGISTER";
+      case ProtocolConstants.Opcode.EVENT:
+        return "EVENT";
+      case ProtocolConstants.Opcode.AUTH_CHALLENGE:
+        return "AUTH_CHALLENGE";
+      case ProtocolConstants.Opcode.AUTH_RESPONSE:
+        return "AUTH_RESPONSE";
+      case ProtocolConstants.Opcode.AUTH_SUCCESS:
+        return "AUTH_SUCCESS";
+      default:
+        return "0x" + Integer.toHexString(opcode);
+    }
   }
 }

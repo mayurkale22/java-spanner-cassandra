@@ -36,6 +36,7 @@ import com.datastax.oss.protocol.internal.request.Prepare;
 import com.datastax.oss.protocol.internal.request.Query;
 import com.datastax.oss.protocol.internal.request.query.QueryOptions;
 import com.google.api.gax.rpc.ApiCallContext;
+import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsRecorder;
 import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -66,6 +67,7 @@ public final class DriverConnectionHandlerTest {
   private static final ArgumentCaptor<Map<String, String>> attachmentsCaptor =
       ArgumentCaptor.forClass(Map.class);
   private AdapterClientWrapper mockAdapterClient;
+  private BuiltInMetricsRecorder mockMetricsRecorder;
   private Socket mockSocket;
   private ByteArrayOutputStream outputStream;
 
@@ -74,6 +76,7 @@ public final class DriverConnectionHandlerTest {
   @Before
   public void setUp() throws IOException {
     mockAdapterClient = mock(AdapterClientWrapper.class);
+    mockMetricsRecorder = mock(BuiltInMetricsRecorder.class);
     mockSocket = mock(Socket.class);
     outputStream = new ByteArrayOutputStream();
     when(mockSocket.getOutputStream()).thenReturn(outputStream);
@@ -109,7 +112,10 @@ public final class DriverConnectionHandlerTest {
     // Use a max commit delay of 100 ms.
     DriverConnectionHandler handler =
         new DriverConnectionHandler(
-            mockSocket, mockAdapterClient, Optional.of(Duration.ofMillis(100)));
+            mockSocket,
+            mockAdapterClient,
+            Optional.of(Duration.ofMillis(100)),
+            mockMetricsRecorder);
     handler.run();
 
     assertThat(outputStream.toString(StandardCharsets.UTF_8.name())).isEqualTo("gRPC response");
@@ -179,7 +185,7 @@ public final class DriverConnectionHandlerTest {
     // Use a max commit delay of 100 ms.
     DriverConnectionHandler handler =
         new DriverConnectionHandler(
-            mockSocket, mockAdapterClient, Optional.of(Duration.ofMillis(100)));
+            mockSocket, mockAdapterClient, Optional.of(Duration.ofMillis(100)), null);
     handler.run();
 
     assertThat(outputStream.toString(StandardCharsets.UTF_8.name())).isEqualTo("gRPC response");

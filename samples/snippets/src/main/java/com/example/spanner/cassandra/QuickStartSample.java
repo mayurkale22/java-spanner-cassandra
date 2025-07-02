@@ -42,9 +42,9 @@ class QuickStartSample {
   public static void main(String[] args) {
 
     // TODO(developer): Replace these variables before running the sample.
-    final String projectId = "my-gcp-project";
-    final String instanceId = "my-spanner-instance";
-    final String databaseId = "my_db";
+    final String projectId = "span-cloud-testing";
+    final String instanceId = "c2sp";
+    final String databaseId = "analytics";
 
     final String databaseUri =
         String.format("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseId);
@@ -54,6 +54,7 @@ class QuickStartSample {
             .setDatabaseUri(databaseUri) // Set spanner database URI.
             .addContactPoint(new InetSocketAddress("localhost", 9042))
             .withLocalDatacenter("datacenter1")
+            .setBuiltInMetricsEnabled(true)
             .withKeyspace(databaseId) // Keyspace name should be the same as spanner database name
             .withConfigLoader(
                 DriverConfigLoader.programmaticBuilder()

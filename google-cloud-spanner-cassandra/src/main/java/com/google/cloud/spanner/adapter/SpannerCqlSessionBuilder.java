@@ -53,6 +53,7 @@ public final class SpannerCqlSessionBuilder
   private int numGrpcChannels = DEFAULT_NUM_GRPC_CHANNELS;
   private String databaseUri = null;
   private String host = null;
+  private boolean enableBuiltInMetrics = false;
   private Optional<Duration> maxCommitDelay = Optional.empty();
 
   /**
@@ -101,6 +102,14 @@ public final class SpannerCqlSessionBuilder
    */
   public SpannerCqlSessionBuilder setMaxCommitDelay(Duration maxCommitDelay) {
     this.maxCommitDelay = Optional.of(maxCommitDelay);
+    return this;
+  }
+
+  /**
+   * Sets whether to enable or disable built in metrics. Built in metrics are disabled by default.
+   */
+  public SpannerCqlSessionBuilder setBuiltInMetricsEnabled(boolean enableBuiltInMetrics) {
+    this.enableBuiltInMetrics = enableBuiltInMetrics;
     return this;
   }
 

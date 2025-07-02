@@ -21,8 +21,12 @@ import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
 import com.google.api.gax.rpc.FixedHeaderProvider;
 import com.google.api.gax.rpc.HeaderProvider;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsConstant;
+import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsProvider;
+import com.google.cloud.spanner.adapter.metrics.BuiltInMetricsRecorder;
 import com.google.spanner.adapter.v1.AdapterClient;
 import com.google.spanner.adapter.v1.AdapterSettings;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -40,6 +44,10 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 final class Adapter {
   private static final Logger LOG = LoggerFactory.getLogger(Adapter.class);
+
+  private final BuiltInMetricsProvider builtInMetricsProvider = BuiltInMetricsProvider.INSTANCE;
+  private final BuiltInMetricsRecorder metricsRecorder;
+
   private static final String RESOURCE_PREFIX_HEADER_KEY = "google-cloud-resource-prefix";
   private static final long MAX_GLOBAL_STATE_SIZE = (long) (1e8 / 256); // ~100 MB
   private static final int DEFAULT_CONNECTION_BACKLOG = 50;
@@ -91,6 +99,21 @@ final class Adapter {
     this.port = port;
     this.numGrpcChannels = numGrpcChannels;
     this.maxCommitDelay = maxCommitDelay;
+
+    GoogleCredentials credentials = null;
+    try {
+      credentials = GoogleCredentials.getApplicationDefault();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    OpenTelemetry openTelemetry =
+        builtInMetricsProvider.getOrCreateOpenTelemetry("span-cloud-testing", "c2sp", credentials);
+    metricsRecorder =
+        new BuiltInMetricsRecorder(
+            openTelemetry,
+            BuiltInMetricsConstant.METER_NAME,
+            builtInMetricsProvider.createClientAttributes());
   }
 
   /** Starts the adapter, initializing the local TCP server and handling client connections. */
@@ -171,7 +194,8 @@ final class Adapter {
       while (!Thread.currentThread().isInterrupted()) {
         final Socket clientSocket = serverSocket.accept();
         executor.execute(
-            new DriverConnectionHandler(clientSocket, adapterClientWrapper, maxCommitDelay));
+            new DriverConnectionHandler(
+                clientSocket, adapterClientWrapper, maxCommitDelay, metricsRecorder));
         LOG.info("Accepted client connection from: {}", clientSocket.getRemoteSocketAddress());
       }
     } catch (SocketException e) {
