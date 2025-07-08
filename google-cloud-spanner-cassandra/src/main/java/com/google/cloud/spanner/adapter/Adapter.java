@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 final class Adapter {
   private static final Logger LOG = LoggerFactory.getLogger(Adapter.class);
-
   private final BuiltInMetricsProvider builtInMetricsProvider = BuiltInMetricsProvider.INSTANCE;
   private static final String RESOURCE_PREFIX_HEADER_KEY = "google-cloud-resource-prefix";
   private static final long MAX_GLOBAL_STATE_SIZE = (long) (1e8 / 256); // ~100 MB
