@@ -64,6 +64,7 @@ final class AdapterClientWrapper {
    */
   byte[] sendGrpcRequest(
       byte[] payload, Map<String, String> attachments, ApiCallContext context, int streamId) {
+    // 1. Build the gRPC request object.
     AdaptMessageRequest request =
         AdaptMessageRequest.newBuilder()
             .setName(sessionManager.getSession().getName())
@@ -72,8 +73,6 @@ final class AdapterClientWrapper {
             .setPayload(ByteString.copyFrom(payload))
             .build();
 
-    // Use a try-with-resources block for the output stream and a more direct
-    // approach to handle the streamed response payloads.
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       ServerStream<AdaptMessageResponse> serverStream =
           adapterClient.adaptMessageCallable().call(request, context);
