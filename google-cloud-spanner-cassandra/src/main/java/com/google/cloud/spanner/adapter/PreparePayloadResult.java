@@ -28,6 +28,7 @@ import java.util.Optional;
  */
 public class PreparePayloadResult {
   private int opcode;
+  private int streamId;
   private ApiCallContext context;
   private Map<String, String> attachments;
   private Optional<byte[]> attachmentErrorResponse;
@@ -35,21 +36,24 @@ public class PreparePayloadResult {
 
   public PreparePayloadResult(
       int opcode,
+      int streamId,
       ApiCallContext context,
       Map<String, String> attachments,
       Optional<byte[]> attachmentErrorResponse) {
     this.opcode = opcode;
+    this.streamId = streamId;
     this.context = context;
     this.attachments = attachments;
     this.attachmentErrorResponse = attachmentErrorResponse;
   }
 
-  public PreparePayloadResult(int opcode, ApiCallContext context, Map<String, String> attachments) {
-    this(opcode, context, attachments, Optional.empty());
+  public PreparePayloadResult(
+      int opcode, int streamId, ApiCallContext context, Map<String, String> attachments) {
+    this(opcode, streamId, context, attachments, Optional.empty());
   }
 
-  public PreparePayloadResult(int opcode, ApiCallContext context) {
-    this(opcode, context, EMPTY_ATTACHMENTS, Optional.empty());
+  public PreparePayloadResult(int opcode, int streamId, ApiCallContext context) {
+    this(opcode, streamId, context, EMPTY_ATTACHMENTS, Optional.empty());
   }
 
   public Map<String, String> getAttachments() {
@@ -62,6 +66,10 @@ public class PreparePayloadResult {
 
   public ApiCallContext getContext() {
     return context;
+  }
+
+  public int getStreamId() {
+    return streamId;
   }
 
   public String opcodeString() {

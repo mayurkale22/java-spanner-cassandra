@@ -22,10 +22,14 @@ import com.datastax.oss.protocol.internal.Frame;
 import com.datastax.oss.protocol.internal.FrameCodec;
 import com.datastax.oss.protocol.internal.ProtocolConstants.ErrorCode;
 import com.datastax.oss.protocol.internal.response.Error;
+import com.datastax.oss.protocol.internal.response.Supported;
 import com.datastax.oss.protocol.internal.response.error.Unprepared;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Utility class for creating specific types of error response frames used in the server protocol,
@@ -57,6 +61,19 @@ public final class ErrorMessageUtils {
   public static byte[] unpreparedResponse(byte[] queryId) {
     Unprepared errorMsg = new Unprepared("Unprepared", queryId);
     return errorResponse(errorMsg);
+  }
+
+  public static byte[] supportedResponse(int streamId) {
+    Map<String, List<String>> options = new HashMap<>();
+    options.put("CQL_VERSION", Collections.singletonList("3.0.0"));
+    options.put("COMPRESSION", Collections.emptyList());
+    Supported supported = new Supported(options);
+
+    Frame responseFrame =
+        Frame.forResponse(
+            PROTOCOL_VERSION, streamId, null, Frame.NO_PAYLOAD, Collections.emptyList(), supported);
+    ByteBuf responseBuf = serverFrameCodec.encode(responseFrame);
+    return convertByteBufToByteArray(responseBuf);
   }
 
   /**

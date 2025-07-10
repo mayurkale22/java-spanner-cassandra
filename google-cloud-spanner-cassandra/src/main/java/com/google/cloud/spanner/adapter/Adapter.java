@@ -34,6 +34,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -116,10 +117,13 @@ final class Adapter {
 
       channelProviderBuilder
           .setCredentials(credentials)
-          .setChannelPoolSettings(ChannelPoolSettings.staticallySized(numGrpcChannels));
+          .setChannelPoolSettings(ChannelPoolSettings.staticallySized(numGrpcChannels))
+          .setAllowNonDefaultServiceAccount(true);
 
       if (isEnableDirectPathXdsEnv()) {
         channelProviderBuilder.setAttemptDirectPath(true);
+        channelProviderBuilder.setAllowHardBoundTokenTypes(
+            Collections.singletonList(InstantiatingGrpcChannelProvider.HardBoundTokenTypes.ALTS));
         channelProviderBuilder.setAttemptDirectPathXds();
       }
       HeaderProvider headerProvider =
@@ -207,7 +211,7 @@ final class Adapter {
   }
 
   private static boolean isEnableDirectPathXdsEnv() {
-    return Boolean.parseBoolean(System.getenv(ENV_VAR_GOOGLE_SPANNER_ENABLE_DIRECT_ACCESS));
+    return true;
   }
 
   private static final class AdapterStartException extends RuntimeException {
