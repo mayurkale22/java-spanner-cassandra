@@ -58,6 +58,7 @@ import org.mockito.ArgumentCaptor;
 public final class DriverConnectionHandlerTest {
 
   private static final int HEADER_LENGTH = 9;
+  private static final int STREAM_ID = 2;
   private static final FrameCodec<ByteBuf> clientFrameCodec =
       FrameCodec.defaultClient(
           new ByteBufPrimitiveCodec(ByteBufAllocator.DEFAULT), Compressor.none());
@@ -196,7 +197,7 @@ public final class DriverConnectionHandlerTest {
   public void failedExecuteMessage_unpreparedError() throws IOException {
     byte[] queryId = {1, 2};
     byte[] validPayload = createExecuteMessage(queryId);
-    byte[] response = unpreparedResponse(-1, queryId);
+    byte[] response = unpreparedResponse(STREAM_ID, queryId);
     when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(validPayload));
     AttachmentsCache AttachmentsCache = new AttachmentsCache(1);
     when(mockAdapterClient.getAttachmentsCache()).thenReturn(AttachmentsCache);
@@ -236,7 +237,7 @@ public final class DriverConnectionHandlerTest {
   public void failedBatchMessage_unpreparedError() throws IOException {
     byte[] queryId = {1, 2};
     byte[] validPayload = createBatchMessage(queryId);
-    byte[] response = unpreparedResponse(-1, queryId);
+    byte[] response = unpreparedResponse(STREAM_ID, queryId);
     when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(validPayload));
     AttachmentsCache AttachmentsCache = new AttachmentsCache(1);
     when(mockAdapterClient.getAttachmentsCache()).thenReturn(AttachmentsCache);
@@ -255,7 +256,7 @@ public final class DriverConnectionHandlerTest {
     when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(shortHeader));
     byte[] expectedResponse =
         serverErrorResponse(
-            "Server error during request processing: Payload is not well formed.", -1);
+            -1, "Server error during request processing: Payload is not well formed.");
 
     DriverConnectionHandler handler = new DriverConnectionHandler(mockSocket, mockAdapterClient);
     handler.run();
@@ -270,7 +271,7 @@ public final class DriverConnectionHandlerTest {
     when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(header));
     byte[] expectedResponse =
         serverErrorResponse(
-            "Server error during request processing: Payload is not well formed.", -1);
+            -1, "Server error during request processing: Payload is not well formed.");
 
     DriverConnectionHandler handler = new DriverConnectionHandler(mockSocket, mockAdapterClient);
     handler.run();
@@ -287,7 +288,7 @@ public final class DriverConnectionHandlerTest {
     when(mockSocket.getInputStream()).thenReturn(new ByteArrayInputStream(invalidPayload));
     byte[] expectedResponse =
         serverErrorResponse(
-            "Server error during request processing: Payload is not well formed.", -1);
+            -1, "Server error during request processing: Payload is not well formed.");
 
     DriverConnectionHandler handler = new DriverConnectionHandler(mockSocket, mockAdapterClient);
 
@@ -324,7 +325,7 @@ public final class DriverConnectionHandlerTest {
   }
 
   private static byte[] encodeMessage(Message msg) {
-    Frame frame = Frame.forRequest(4, HEADER_LENGTH, false, Collections.emptyMap(), msg);
+    Frame frame = Frame.forRequest(4, STREAM_ID, false, Collections.emptyMap(), msg);
     ByteBuf payloadBuf = clientFrameCodec.encode(frame);
     byte[] payload = new byte[payloadBuf.readableBytes()];
     payloadBuf.readBytes(payload);

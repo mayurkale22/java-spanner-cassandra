@@ -97,7 +97,7 @@ final class AdapterClientWrapper {
       //    If it's the *only* part, the body will be empty.
       if (lastPayload == null) {
         return serverErrorResponse(
-            "No response received from the server.", streamId); // No response payloads at all.
+            streamId, "No response received from the server."); // No response payloads at all.
       }
 
       // 4. Assemble the final response: header first, then the rest of the body.
@@ -109,7 +109,7 @@ final class AdapterClientWrapper {
     } catch (IOException | RuntimeException e) {
       // 5. Catch both gRPC and stream-writing errors in a single block.
       LOG.error("Error during gRPC call or stream processing for streamId: {}", streamId, e);
-      return serverErrorResponse(e.getMessage(), streamId);
+      return serverErrorResponse(streamId, e.getMessage());
     }
   }
 

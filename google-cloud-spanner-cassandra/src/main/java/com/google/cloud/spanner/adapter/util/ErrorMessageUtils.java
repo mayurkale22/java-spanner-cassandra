@@ -69,7 +69,7 @@ public final class ErrorMessageUtils {
    * @param message The error message.
    * @return A byte array representing the server error response.
    */
-  public static byte[] serverErrorResponse(String message, int streamId) {
+  public static byte[] serverErrorResponse(int streamId, String message) {
     Error errorMsg = new Error(ErrorCode.SERVER_ERROR, message);
     return errorResponse(streamId, errorMsg);
   }

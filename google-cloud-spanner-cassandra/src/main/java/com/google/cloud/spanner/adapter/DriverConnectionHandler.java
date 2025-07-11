@@ -154,7 +154,7 @@ final class DriverConnectionHandler implements Runnable {
         LOG.error("Error processing request: ", e);
         responseToWrite =
             serverErrorResponse(
-                "Server error during request processing: " + e.getMessage(), streamId);
+                streamId, "Server error during request processing: " + e.getMessage());
       }
 
       outputStream.write(responseToWrite);

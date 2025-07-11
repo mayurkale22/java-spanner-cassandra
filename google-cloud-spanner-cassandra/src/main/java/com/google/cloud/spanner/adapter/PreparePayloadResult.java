@@ -64,7 +64,7 @@ public class PreparePayloadResult {
     return context;
   }
 
-  public int getStreamId() {
+  int getStreamId() {
     return streamId;
   }
 }
