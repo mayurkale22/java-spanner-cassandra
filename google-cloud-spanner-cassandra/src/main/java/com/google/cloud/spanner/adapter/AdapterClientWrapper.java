@@ -26,6 +26,8 @@ import com.google.spanner.adapter.v1.AdaptMessageResponse;
 import com.google.spanner.adapter.v1.AdapterClient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +66,7 @@ final class AdapterClientWrapper {
    */
   byte[] sendGrpcRequest(
       byte[] payload, Map<String, String> attachments, ApiCallContext context, int streamId) {
-    // 1. Build the gRPC request object.
+
     AdaptMessageRequest request =
         AdaptMessageRequest.newBuilder()
             .setName(sessionManager.getSession().getName())
@@ -73,42 +75,38 @@ final class AdapterClientWrapper {
             .setPayload(ByteString.copyFrom(payload))
             .build();
 
-    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+    List<ByteString> collectedPayloads = new ArrayList<>();
+
+    try {
       ServerStream<AdaptMessageResponse> serverStream =
           adapterClient.adaptMessageCallable().call(request, context);
-
-      ByteString lastPayload = null;
-      ByteArrayOutputStream bodyStream = new ByteArrayOutputStream();
-
-      // 2. Iterate through the streaming response from the server.
-      for (AdaptMessageResponse responsePart : serverStream) {
-        // Update the cache with any state changes from the server.
-        responsePart.getStateUpdatesMap().forEach(attachmentsCache::put);
-
-        // If we've already seen a payload, write it to the body stream.
-        // This keeps `lastPayload` always one step behind, holding the most recent part.
-        if (lastPayload != null) {
-          lastPayload.writeTo(bodyStream);
-        }
-        lastPayload = responsePart.getPayload();
+      for (AdaptMessageResponse adaptMessageResponse : serverStream) {
+        adaptMessageResponse.getStateUpdatesMap().forEach(attachmentsCache::put);
+        collectedPayloads.add(adaptMessageResponse.getPayload());
       }
+    } catch (RuntimeException e) {
+      LOG.error("Error executing AdaptMessage request: ", e);
+      // Any error in getting the AdaptMessageResponse should be reported back to the client.
+      return serverErrorResponse(streamId, e.getMessage());
+    }
 
-      // 3. After the loop, `lastPayload` holds the final message part (the header).
-      //    If it's the *only* part, the body will be empty.
-      if (lastPayload == null) {
-        return serverErrorResponse(
-            streamId, "No response received from the server."); // No response payloads at all.
+    if (collectedPayloads.isEmpty()) {
+      return serverErrorResponse(
+          streamId, "No response received from the server."); // No response payloads at all.
+    }
+
+    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      final int numPayloads = collectedPayloads.size();
+      // In case of multiple responses, the last response contains the header. So write it first.
+      outputStream.write(collectedPayloads.get(numPayloads - 1).toByteArray());
+
+      // Then write the remaining responses.
+      for (int i = 0; i < numPayloads - 1; i++) {
+        outputStream.write(collectedPayloads.get(i).toByteArray());
       }
-
-      // 4. Assemble the final response: header first, then the rest of the body.
-      ByteArrayOutputStream finalResponseStream = new ByteArrayOutputStream();
-      lastPayload.writeTo(finalResponseStream);
-      bodyStream.writeTo(finalResponseStream);
-
-      return finalResponseStream.toByteArray();
-    } catch (IOException | RuntimeException e) {
-      // 5. Catch both gRPC and stream-writing errors in a single block.
-      LOG.error("Error during gRPC call or stream processing for streamId: {}", streamId, e);
+      return outputStream.toByteArray();
+    } catch (IOException e) {
+      LOG.error("Error stitching chunked payloads: ", e);
       return serverErrorResponse(streamId, e.getMessage());
     }
   }
