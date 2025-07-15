@@ -18,7 +18,6 @@ package com.google.cloud.spanner.adapter;
 
 import java.net.InetAddress;
 import java.time.Duration;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,26 +74,24 @@ public class SpannerCassandraLauncher {
     final int numGrpcChannels =
         Integer.parseInt(System.getProperty(NUM_GRPC_CHANNELS_PROP_KEY, DEFAULT_NUM_GRPC_CHANNELS));
     final String maxCommitDelayProperty = System.getProperty(MAX_COMMIT_DELAY_PROP_KEY);
-    final Optional<Duration> maxCommitDelay;
-    if (maxCommitDelayProperty != null) {
-      maxCommitDelay = Optional.of(Duration.ofMillis(Integer.parseInt(maxCommitDelayProperty)));
-    } else {
-      maxCommitDelay = Optional.empty();
-    }
 
     if (databaseUri == null) {
       throw new IllegalArgumentException(
           "Spanner database URI not set. Please set it using -DdatabaseUri option.");
     }
 
-    Adapter adapter =
-        new Adapter(
-            DEFAULT_SPANNER_ENDPOINT,
-            databaseUri,
-            inetAddress,
-            port,
-            numGrpcChannels,
-            maxCommitDelay);
+    Options.Builder opBuilder =
+        new Options.Builder()
+            .host(DEFAULT_SPANNER_ENDPOINT)
+            .port(port)
+            .databaseUri(databaseUri)
+            .inetAddress(inetAddress)
+            .numGrpcChannels(numGrpcChannels);
+    if (maxCommitDelayProperty != null) {
+      opBuilder.maxCommitDelay(Duration.ofMillis(Integer.parseInt(maxCommitDelayProperty)));
+    }
+
+    Adapter adapter = new Adapter(opBuilder.build());
 
     Runtime.getRuntime()
         .addShutdownHook(
