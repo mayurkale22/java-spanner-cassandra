@@ -155,11 +155,13 @@ final class Adapter {
   private void acceptClientConnections() {
     try {
       while (!Thread.currentThread().isInterrupted()) {
-        final Socket clientSocket = serverSocket.accept();
-        executor.execute(
-            new DriverConnectionHandler(
-                clientSocket, adapterClientWrapper, options.getMaxCommitDelay()));
-        LOG.debug("Accepted client connection from: {}", clientSocket.getRemoteSocketAddress());
+        final Socket socket = serverSocket.accept();
+        // Optimize for latency (2), then bandwidth (1) and then connection time (0).
+        socket.setPerformancePreferences(0, 2, 1);
+        // Turn on TCP_NODELAY to optimize for chatty protocol that prefers low latency.
+        socket.setTcpNoDelay(true);
+        executor.execute(new DriverConnectionHandler(socket, adapterClientWrapper, options.maxCommitDelay));
+        LOG.debug("Accepted client connection from: {}", socket.getRemoteSocketAddress());
       }
     } catch (SocketException e) {
       if (!serverSocket.isClosed()) {
