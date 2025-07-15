@@ -206,16 +206,16 @@ public final class SpannerCqlSessionBuilder
 
   private void createAndStartAdapter() {
 
-    Options options =
-        new Options.Builder()
-            .host(host)
-            .port(port)
+    AdapterOptions adapterOptions =
+        new AdapterOptions.Builder()
+            .spannerEndpoint(host)
+            .tcpPort(port)
             .inetAddress(iNetAddress)
             .databaseUri(databaseUri)
             .numGrpcChannels(numGrpcChannels)
             .build();
 
-    adapter = new Adapter(options);
+    adapter = new Adapter(adapterOptions);
     adapter.start();
   }
 }

@@ -55,10 +55,10 @@ public final class AdapterTest {
 
   @Before
   public void setUp() {
-    Options options =
-        new Options.Builder()
-            .host(TEST_HOST)
-            .port(TEST_PORT)
+    AdapterOptions options =
+        new AdapterOptions.Builder()
+            .spannerEndpoint(TEST_HOST)
+            .tcpPort(TEST_PORT)
             .databaseUri(TEST_DATABASE_URI)
             .inetAddress(inetAddress)
             .build();

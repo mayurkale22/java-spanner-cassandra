@@ -80,10 +80,10 @@ public class SpannerCassandraLauncher {
           "Spanner database URI not set. Please set it using -DdatabaseUri option.");
     }
 
-    Options.Builder opBuilder =
-        new Options.Builder()
-            .host(DEFAULT_SPANNER_ENDPOINT)
-            .port(port)
+    AdapterOptions.Builder opBuilder =
+        new AdapterOptions.Builder()
+            .spannerEndpoint(DEFAULT_SPANNER_ENDPOINT)
+            .tcpPort(port)
             .databaseUri(databaseUri)
             .inetAddress(inetAddress)
             .numGrpcChannels(numGrpcChannels);

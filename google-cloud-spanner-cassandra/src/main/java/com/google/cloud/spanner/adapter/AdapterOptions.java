@@ -19,14 +19,15 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Optional;
 
-/* Builder class for creating an instance of {@link Options}. */
-public class Options {
+/* Builder class for creating an instance of {@link AdapterOptions}. */
+class AdapterOptions {
 
-  static int DEFAULT_NUM_GRPC_CHANNELS = 4;
+  private static final String DEFAULT_SPANNER_ENDPOINT = "spanner.googleapis.com:443";
+  private static final int DEFAULT_NUM_GRPC_CHANNELS = 4;
 
   public static class Builder {
-    String host;
-    int port;
+    String spannerEndpoint = DEFAULT_SPANNER_ENDPOINT;
+    int tcpPort;
     InetAddress inetAddress;
     String databaseUri;
     int numGrpcChannels = DEFAULT_NUM_GRPC_CHANNELS;
@@ -34,14 +35,14 @@ public class Options {
 
     public Builder() {}
 
-    public Builder host(String host) {
-      this.host = host;
+    public Builder spannerEndpoint(String spannerEndpoint) {
+      this.spannerEndpoint = spannerEndpoint;
       return this;
     }
 
     /** The local TCP port number that the adapter server should listen on. */
-    public Builder port(int port) {
-      this.port = port;
+    public Builder tcpPort(int tcpPort) {
+      this.tcpPort = tcpPort;
       return this;
     }
 
@@ -69,33 +70,33 @@ public class Options {
       return this;
     }
 
-    public Options build() {
-      return new Options(this);
+    public AdapterOptions build() {
+      return new AdapterOptions(this);
     }
   }
 
-  private final String host;
-  private final int port;
+  private final String spannerEndpoint;
+  private final int tcpPort;
   private final InetAddress inetAddress;
   private final String databaseUri;
   private final int numGrpcChannels;
   private final Optional<Duration> maxCommitDelay;
 
-  private Options(Builder builder) {
-    this.host = builder.host;
-    this.port = builder.port;
+  private AdapterOptions(Builder builder) {
+    this.spannerEndpoint = builder.spannerEndpoint;
+    this.tcpPort = builder.tcpPort;
     this.inetAddress = builder.inetAddress;
     this.databaseUri = builder.databaseUri;
     this.numGrpcChannels = builder.numGrpcChannels;
     this.maxCommitDelay = builder.maxCommitDelay;
   }
 
-  String getHost() {
-    return host;
+  String getSpannerEndpoint() {
+    return spannerEndpoint;
   }
 
-  int getPort() {
-    return port;
+  int getTcpPort() {
+    return tcpPort;
   }
 
   String getDatabaseUri() {

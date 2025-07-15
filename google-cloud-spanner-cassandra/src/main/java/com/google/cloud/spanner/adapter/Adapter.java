@@ -57,14 +57,14 @@ final class Adapter {
   private ServerSocket serverSocket;
   private ExecutorService executor;
   private boolean started = false;
-  private Options options;
+  private AdapterOptions options;
 
   /**
    * Constructor for the Adapter class, specifying a specific address to bind to.
    *
    * @param options options for init.
    */
-  Adapter(Options options) {
+  Adapter(AdapterOptions options) {
     this.options = options;
   }
 
@@ -102,7 +102,7 @@ final class Adapter {
               DEFAULT_USER_AGENT);
       AdapterSettings settings =
           AdapterSettings.newBuilder()
-              .setEndpoint(options.getHost())
+              .setEndpoint(options.getSpannerEndpoint())
               .setTransportChannelProvider(channelProviderBuilder.build())
               .setHeaderProvider(headerProvider)
               .build();
@@ -120,8 +120,9 @@ final class Adapter {
 
       // Start listening on the specified host and port.
       serverSocket =
-          new ServerSocket(options.getPort(), DEFAULT_CONNECTION_BACKLOG, options.getInetAddress());
-      LOG.info("Local TCP server started on {}:{}", options.getInetAddress(), options.getPort());
+          new ServerSocket(
+              options.getTcpPort(), DEFAULT_CONNECTION_BACKLOG, options.getInetAddress());
+      LOG.info("Local TCP server started on {}:{}", options.getInetAddress(), options.getTcpPort());
 
       executor = Executors.newCachedThreadPool();
 
