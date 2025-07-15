@@ -160,7 +160,7 @@ final class Adapter {
         socket.setPerformancePreferences(0, 2, 1);
         // Turn on TCP_NODELAY to optimize for chatty protocol that prefers low latency.
         socket.setTcpNoDelay(true);
-        executor.execute(new DriverConnectionHandler(socket, adapterClientWrapper, options.maxCommitDelay));
+        executor.execute(new DriverConnectionHandler(socket, adapterClientWrapper, options.maxCommitDelay()));
         LOG.debug("Accepted client connection from: {}", socket.getRemoteSocketAddress());
       }
     } catch (SocketException e) {
