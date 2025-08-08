@@ -160,6 +160,33 @@ For non-Java applications or tools like `cqlsh`, you can run the Spanner Cassand
     * Replace the value of `-DdatabaseUri` with your Spanner database URI.
     * You can omit `-Dhost` to use the default `0.0.0.0`, omit `-Dport` to use the default `9042`, and omit `-DnumGrpcChannels` to use the default `4`.
 
+## TCP Request Interception and Logging
+
+The library provides a utility class `CassandraTcpInterceptor` to start a TCP server that intercepts and logs raw Cassandra TCP requests. This is useful for debugging, auditing, or developing protocol-aware tools.
+
+### Usage Example
+
+````java
+import com.google.cloud.spanner.adapter.util.CassandraTcpInterceptor;
+
+public class TcpInterceptorDemo {
+    public static void main(String[] args) throws Exception {
+        // Start the interceptor on port 9042 (default Cassandra port)
+        CassandraTcpInterceptor interceptor = new CassandraTcpInterceptor(9042);
+        interceptor.start();
+
+        // The server will now log all incoming TCP requests to the configured logger
+        // ...
+        // To stop the server:
+        // interceptor.stop();
+    }
+}
+````
+
+- The interceptor logs all raw bytes received from clients in hexadecimal format.
+- You can configure the port by passing a different value to the constructor.
+- The server runs in its own thread and can be stopped by calling `stop()`.
+
 ## Supported Cassandra Versions
 
 By default, Spanner Cassandra client communicates using the [Cassandra 4.0 protocol](https://github.com/apache/cassandra/blob/trunk/doc/native_protocol_v4.spec) and is fully tested and verified with **Cassandra 4.x**, providing complete support. For **Cassandra 3.x**, the client is designed to be compatible and should work seamlessly, though we recommend thorough testing within your specific setup.
